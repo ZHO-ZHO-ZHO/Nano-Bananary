@@ -6,11 +6,13 @@ if (!process.env.API_KEY) {
   throw new Error("API_KEY environment variable is not set.");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY, httpOptions: {
+  baseUrl: process.env.GEMINI_BASE_URL
+} });
 
 export async function editImage(
-    base64ImageData: string, 
-    mimeType: string, 
+    base64ImageData: string,
+    mimeType: string,
     prompt: string,
     maskBase64: string | null,
     secondaryImage: { base64: string; mimeType: string } | null
@@ -35,7 +37,7 @@ export async function editImage(
       });
       fullPrompt = `Apply the following instruction only to the masked area of the image: "${prompt}". Preserve the unmasked area.`;
     }
-    
+
     if (secondaryImage) {
         parts.push({
             inlineData: {
@@ -76,7 +78,7 @@ export async function editImage(
             const finishReason = response.candidates?.[0]?.finishReason;
             const safetyRatings = response.candidates?.[0]?.safetyRatings;
             errorMessage = "The model did not return an image. It might have refused the request. Please try a different image or prompt.";
-            
+
             if (finishReason === 'SAFETY') {
                 const blockedCategories = safetyRatings?.filter(r => r.blocked).map(r => r.category).join(', ');
                 errorMessage = `The request was blocked for safety reasons. Categories: ${blockedCategories || 'Unknown'}. Please modify your prompt or image.`;
@@ -138,7 +140,7 @@ export async function generateVideo(
         };
 
         let operation = await ai.models.generateVideos(request);
-        
+
         onProgress("Polling for results, this may take a few minutes...");
 
         while (!operation.done) {
